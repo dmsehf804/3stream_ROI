@@ -56,7 +56,7 @@ def rescale_pixel_values(img):
     # print('Min: %.3f, Max: %.3f' % (img.min(), img.max()))
     img = img.astype('float32')
     # normalize to the range 0:1
-    # img /= 255.0
+    img /= 255.0
     # normalize to the range -1:1
     img = (img / 255.0) * 2 - 1
     # confirm the normalization
@@ -97,12 +97,14 @@ def read_frames(video_path):
 
 def run_flow(sorted_list_frames):
     sorted_list_img = []
+    # print("aaaaaaaaaaaaaaaaa",sorted_list_frames)
     for frame in sorted_list_frames:
         img = cv2.imread(frame, cv2.IMREAD_UNCHANGED)
         img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         sorted_list_img.append(img_gray)
 
     result = np.zeros((1, IMAGE_CROP_SIZE, IMAGE_CROP_SIZE, 2))
+    # print(sorted_list_img)
     prev = sorted_list_img[0]
     for curr in sorted_list_img[1:]:
         flow = compute_optical_flow(prev, curr)
@@ -139,32 +141,46 @@ def main(args):
     # sample_video(args.video_path, args.path_output)
 
     # make sure the frames are processed in order
-    path_dir = 'data/train/'
-    data = os.listdir(path_dir)
+    src_dir = 'data/train/'
+    dst_rgb_dir = 'data/UCF101_train_rgb/'
+    dst_flow_dir = 'data/UCF101_train_flow/'
+    temp_dir = 'data/temp/'
+    data = os.listdir(src_dir)
+
     data.sort()
     for folder in data:
     # pbar = tqdm(total=len(os.listdir(folder)))
-        for video in os.listdir(path_dir+folder):
-            # sorted_list_frames = read_frames(path_dir+folder+'/'+video)
-
-            list_frames = []
+        for video in os.listdir(src_dir+folder):
             
-            list_frames.append(path_dir+folder+'/'+video)
-            sorted_list_frames = sorted(list_frames)
-            video_name = video
-
+            # print(src_dir+folder+'/'+video)
+            
+            # print("55555555555555555555555",src_dir+folder+'/'+video)
+            sample_video(src_dir+folder+'/'+video, temp_dir)
+            
+            sorted_list_frames = read_frames(temp_dir)
+            
+            sorted_list_frames = sorted(sorted_list_frames)
+            video_name = video[:-4]
+            CNT = len(sorted_list_frames)//
+            # print("333333333333322222222222222",sorted_list_frames)
             rgb = run_rgb(sorted_list_frames)
             npy_rgb_output = 'data/' +'UCF101_train_rgb/'+ folder+'/'+video_name[:-4] + '.npy'
             if not os.path.exists( 'data/' +'UCF101_train_rgb/'+ folder):
                 os.makedirs( 'data/' +'UCF101_train_rgb/'+ folder)
             np.save(npy_rgb_output, rgb)
-
+            # print("22222222222222",sorted_list_frames)
             flow = run_flow(sorted_list_frames)
             npy_flow_output = 'data/' + 'UCF101_train_flow/' +folder+'/'+ video_name[:-4] + '.npy'
             if not os.path.exists( 'data/' +'UCF101_train_flow/'+ folder):
                 os.makedirs( 'data/' +'UCF101_train_flow/'+ folder)
             np.save(npy_flow_output, flow)
-
+            for files in os.listdir(temp_dir):
+                file_path = os.path.join(temp_dir, files)
+                try:
+                    if os.path.isfile(file_path):
+                        os.unlink(file_path)
+                except Exception as e:
+                    print(e)
 
 if __name__ == "__main__":
 

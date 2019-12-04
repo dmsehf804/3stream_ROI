@@ -177,13 +177,14 @@ class DataSet_UCF():
                     # Get and resample frames.
                     frames = self.get_frames_for_sample(sample)
                     frames = self.rescale_list(frames, self.seq_length)
-
+                    
                     # Build the image sequence
                     sequence = self.build_image_sequence(frames)
+                    print(np.array(sequence).shape)
                     # sequence = np.array(sequence)
                 else:
                     # Get the sequence from disk.
-                    print("asdasdasdas")
+                    # print("asdasdasdas")
                     sequence = self.get_extracted_sequence(data_type, sample)
 
                     if sequence is None:
@@ -194,7 +195,7 @@ class DataSet_UCF():
                 # print("asssaas@@@@@@@@@@@@@@@@@@@@@@@@")
                 # X = np.array(X)
                 # y = np.array(y)
-                # print(X.shape, y.shape)
+                # print(np.array(X).shape)
                 # np.expand_dims(X,axis=0)
                 
                 # print(X.shape, y.shape)
@@ -261,7 +262,7 @@ class DataSet_UCF():
         if we want a list of size 5 and we have a list of size 25, return a new
         list of size five which is every 5th element of the origina list."""
         assert len(input_list) >= size
-
+        print(str(size)+'asasdasdasd')
         # Get the number to skip between iterations.
         skip = len(input_list) // size
 

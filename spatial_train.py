@@ -10,9 +10,29 @@ from os import makedirs
 from I3D_model import Inception_Inflated3d
 from keras.optimizers import SGD, Adam
 import os
+
+from keras.models import Model
+from keras import layers
+from keras.layers import Activation
+from keras.layers import Dense
+from keras.layers import Input
+from keras.layers import BatchNormalization
+from keras.layers import Conv3D
+from keras.layers import MaxPooling3D
+from keras.layers import AveragePooling3D
+from keras.layers import Dropout
+from keras.layers import Reshape
+from keras.layers import Lambda
+from keras.layers import GlobalAveragePooling3D
+
+from keras.engine.topology import get_source_inputs
+from keras.utils import layer_utils
+from keras.utils.data_utils import get_file
+from keras import backend as K
+from I3D_model import conv3d_bn
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   
 
-os.environ["CUDA_VISIBLE_DEVICES"]="2"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 NUM_FRAMES = 25
 FRAME_HEIGHT = 224
@@ -20,7 +40,7 @@ FRAME_WIDTH = 224
 NUM_RGB_CHANNELS = 3
 NUM_FLOW_CHANNELS = 2
 NUM_CLASSES = 101
-WEIGHTS = None
+WEIGHTS = 'rgb_imagenet_and_kinetics'
 
 def train_model(model, nb_epoch, generators, callbacks=[]):
     train_generator, validation_generator = generators
@@ -29,7 +49,7 @@ def train_model(model, nb_epoch, generators, callbacks=[]):
         optimizer=SGD(lr=0.001, momentum=0.9),
         loss='categorical_crossentropy',
         metrics=['accuracy'])
-    
+    model.summary()
     model.fit_generator(
         train_generator,
         steps_per_epoch=100,
@@ -41,7 +61,7 @@ def train_model(model, nb_epoch, generators, callbacks=[]):
 
 def train(num_of_snip=5, saved_weights=None,
         class_limit=None, image_shape=(224, 224),
-        load_to_memory=False, batch_size=32, nb_epoch=1000, name_str='UCF-101_scratch'):
+        load_to_memory=False, batch_size=32, nb_epoch=1000, name_str=None):
 
     # Get local time.
     time_str = time.strftime("%y%m%d%H%M", time.localtime())
@@ -95,11 +115,24 @@ def train(num_of_snip=5, saved_weights=None,
 
  
 
-    model = Inception_Inflated3d(include_top=True,
+    model = Inception_Inflated3d(include_top=False,
                 weights=WEIGHTS,
                 input_shape=(NUM_FRAMES, FRAME_HEIGHT, FRAME_WIDTH, NUM_RGB_CHANNELS),
                 classes=NUM_CLASSES)
+    model = Dropout(0.8)(model)
 
+    model = conv3d_bn(model, 101, 1, 1, 1, padding='same', 
+            use_bias=True, use_activation_fn=False, use_bn=False, name='Conv3d_6a_1x1')
+
+    num_frames_remaining = int(model.shape[1])
+    model = Reshape((num_frames_remaining,101))(model)
+
+    # logits (raw scores for each class)
+    model = Lambda(lambda x: K.mean(x, axis=1, keepdims=False),
+                output_shape=lambda s: (s[0], s[2]))(model)
+
+    # if not endpoint_logit:
+    #     model = Activation('softmax', name='prediction')(model)
     # if saved_weights is None:
     #     print("Loading network from ImageNet weights.")
     #     print("Get and train the top layers...")
@@ -123,9 +156,9 @@ def main():
     num_of_snip = 1 # number of chunks used for each video
     image_shape=(224, 224)
     load_to_memory = False  # pre-load the sequencea in,o memory
-    batch_size = NUM_FRAMES
+    batch_size = 1
     nb_epoch = 500
-    name_str = 'UCF-101_scratch'
+    name_str = WEIGHTS
     "=============================================================================="
 
     train(num_of_snip=num_of_snip, saved_weights=saved_weights,

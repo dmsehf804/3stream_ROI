@@ -76,14 +76,14 @@ class DataSet():
 
         return label_hot
 
-def get_generators(data, image_shape=(224, 224), batch_size=32):
+def get_generators(data, image_shape=(224, 224), batch_size=32, frame_length=25):
     train_datagen = ImageDataGenerator(
             horizontal_flip=True
             )
 
     test_datagen = ImageDataGenerator(rescale=1./255)
     data = DataSet_UCF(
-            seq_length=batch_size,
+            seq_length=frame_length,
             class_limit=101,
             image_shape=image_shape
         )

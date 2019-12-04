@@ -506,8 +506,11 @@ def Inception_Inflated3d(include_top=True,
     else:
         h = int(x.shape[2])
         w = int(x.shape[3])
-        x = AveragePooling3D((2, h, w), strides=(1, 1, 1), padding='valid', name='global_avg_pool')(x)
+        print(w,h)
+        x = AveragePooling3D((2, 7, 7), strides=(1, 1, 1), padding='valid', name='global_avg_pool1')(x)
+        
 
+        
 
 
     inputs = img_input
